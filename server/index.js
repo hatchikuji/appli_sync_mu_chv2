@@ -9,7 +9,7 @@ import bcrypt from "bcrypt";
 import bodyParser from "body-parser";
 import session from "express-session";
 import sharedSession from "express-socket.io-session";
-
+import os from "os";
 
 const publicPath = path.join(path.resolve(), "public");
 const port = process.env.PORT || 3000;
@@ -27,6 +27,19 @@ const sessionMiddleware = session({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(sessionMiddleware);
+
+// Fonction pour récupérer l'adresse IP local
+function getLocalIpAddress() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return '0.0.0.0';
+}
 
 
 //---------------------------------------------------------//
@@ -155,8 +168,10 @@ io.on('connection', (socket) => {
 });
 
 
-server.listen(port, () => {
-    console.log(`server ouvert sur http://localhost:${port}`);
+server.listen(port, '0.0.0.0', () => {
+    console.log(`server ouvert sur http://localhost:${port}\n`);
+    console.log(`en local sur`+ getLocalIpAddress() + `:${port}`);
+
 });
 
 
