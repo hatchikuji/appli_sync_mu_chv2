@@ -31,7 +31,10 @@
 import LoginForm from "./components/LoginForm.vue";
 import RegisterForm from "./components/RegisterForm.vue";
 import eventBus from "./eventBus.js";
+import { io  } from "socket.io-client";
 
+const socket = io();
+    
 export default {
   name: "App",
   components: {
@@ -59,6 +62,7 @@ export default {
           userName: this.userName,
           text: this.newMessage,
         });
+        socket.emit("chat message", msg);
         this.newMessage = ""; // Réinitialise le champ de saisie
       } else {
         console.error("Impossible d'envoyer le message: nom d'utilisateur ou message manquant");
@@ -87,8 +91,8 @@ export default {
     eventBus.on("login", ({userId, username}) => {
       this.handleLogin({userId, username});
     });
-    eventBus.on("message", (msg) => {
-      console.log("Message reçu:", msg);
+    socket.emit("chat message", (msg) => {
+      console.log("Message reçu: ", msg);
       this.messages.push(msg);
     });
   }
