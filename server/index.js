@@ -170,7 +170,7 @@ io.on('connection', (socket) => {
 
 server.listen(port, '0.0.0.0', () => {
     console.log(`server ouvert sur http://localhost:${port}\n`);
-    console.log(`en local sur`+ getLocalIpAddress() + `:${port}`);
+    console.log(`en local sur `+ getLocalIpAddress() + `:${port}`);
 
 });
 
