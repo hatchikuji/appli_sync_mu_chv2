@@ -58,10 +58,10 @@ export default {
     },
     async sendMessage() {
       if (this.userName && this.newMessage) {
-        eventBus.emit("message", {
+       const msg = {
           userName: this.userName,
           text: this.newMessage,
-        });
+        };
         socket.emit("chat message", msg);
         this.newMessage = ""; // Réinitialise le champ de saisie
       } else {
@@ -92,7 +92,7 @@ export default {
       this.handleLogin({userId, username});
     });
     socket.emit("chat message", (msg) => {
-      console.log("Message reçu: ", msg);
+      console.log("Message reçu du client: ", msg);
       this.messages.push(msg);
     });
   }
