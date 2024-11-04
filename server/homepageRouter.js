@@ -1,29 +1,26 @@
-import express from "express";
-import fs from "fs/promises";
-import path from "path";
+// server/homepageRouter.js
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const manifestPath = path.join(__dirname, '../dist/.vite/manifest.json');
+let manifest = {};
+
+if (fs.existsSync(manifestPath)) {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+} else {
+    console.error('Manifest file not found:', manifestPath);
+}
 
 const router = express.Router();
 
-const environment = process.env.NODE_ENV;
-
-router.get("/*", async (req, res) => {
-    const data = {
-        environment,
-        manifest: await parseManifest(),
-    };
-
-    res.render("index.html.ejs", {data});
+router.get('/*', (req, res) => {
+    const environment = process.env.NODE_ENV || 'development';
+    res.render('index.html.ejs', { environment, manifest });
 });
-
-const parseManifest = async() => {
-    if (environment !== "production") {
-        return {};
-    } 
-    const manifestPath = path.join(path.resolve(), "dist", "manifest.json");
-    const manifestFile = await fs.readFile(manifestPath);
-    
-    return JSON.parse(manifestFile);
-}
 
 export default router;
