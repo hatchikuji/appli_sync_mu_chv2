@@ -11,8 +11,10 @@ import session from "express-session";
 import sharedSession from "express-socket.io-session";
 import os from "os";
 
-const publicPath = path.join(path.resolve(), "public");
 const port = process.env.PORT || 3000;
+const publicPath = path.join(path.resolve(), "public");
+const distPath = path.join(path.resolve(), "dist");
+
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
@@ -137,8 +139,13 @@ app.get("/api/user/session", async (req, res) => {
 });
 
 
-app.use("/", express.static(publicPath));
-app.use("/src", assetsRouter);
+if (process.env.NODE_ENV === "production") {
+    app.use("/", express.static(distPath));
+} else {
+    app.use("/", express.static(publicPath));
+    app.use("/src", assetsRouter);
+};
+
 app.use(homepageRouter);
 
 //
