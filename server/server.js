@@ -16,7 +16,16 @@ const distPath = path.join(path.resolve(), "dist");
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+    cors: {
+        origin: [
+            "http://localhost:3000",
+            "http://192.168.1.151:3000"
+        ],
+        methods: ["GET", "POST"]
+    }
+});
+
 
 const sessionMiddleware = session({
     secret: secret,
@@ -169,7 +178,6 @@ io.on('connection', (socket) => {
     console.log('Socket connecté : ' + socket.request.session.id);
     
     socket.on('send_message', (data) => {
-        console.log(data.user_name + ' : ' + data.text);
         io.emit('new_message', data);
     });
 
