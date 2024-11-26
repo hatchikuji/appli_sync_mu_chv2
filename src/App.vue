@@ -5,17 +5,14 @@
     </header>
     <main>
       <div v-if="isLoggedIn">
-        <button @click="toggleDrawer">Chat</button>
-        <div v-show="isDrawerOpen" class="chat-drawer">
-          <h2>Chat</h2>
-          <div class="message">
-            <div v-for="(msg, index) in messages" :key="index" class="message">
-              {{ userName }}: {{ msg.text }}
-            </div>
+        <h2>Chat</h2>
+        <div class="message">
+          <div v-for="(data, index) in messages" :key="index" class="message">
+            {{ data.user_name }}: {{ data.text }}
           </div>
-          <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Entrez votre message..."/>
-          <button @click="sendMessage">Envoyer</button>
         </div>
+        <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Entrez votre message..."/>
+        <button @click="sendMessage">Envoyer</button>
       </div>
       <div class="logreg-form">
         <LoginForm v-if="!isLoggedIn && showLoginForm" @login="handleLogin"/>
@@ -31,10 +28,8 @@
 import LoginForm from "./components/LoginForm.vue";
 import RegisterForm from "./components/RegisterForm.vue";
 import eventBus from "./eventBus.js";
-import { io  } from "socket.io-client";
+import { io } from "socket.io-client";
 
-const socket = io();
-    
 export default {
   name: "App",
   components: {
@@ -45,24 +40,33 @@ export default {
     return {
       isLoggedIn: false, // État de connexion
       showLoginForm: true, // Affiche le formulaire de connexion
-      isDrawerOpen: false, // Affiche le chat
       newMessage: "", // Nouveau message
       messages: [], // Liste des messages
-      userName: null, // Initialiser avec `null` pour indiquer qu'il est en cours de chargement
+      user_name: null, // Initialiser avec `null` pour indiquer qu'il est en cours de chargement
+      socket: null,
     };
   },
   methods: {
-    handleLogin({userId, username}) {
+    handleLogin({username}) {
       this.isLoggedIn = true; // Connecte l'utilisateur
-      this.userName = username; // Récupère le nom d'utilisateur
+      this.user_name = username; // Récupère le nom d'utilisateur
+
+      this.socket = io("http://localhost:3000");
+
+      this.socket.on("new_message", (data) => {
+        console.log("Données reçues: ", data);
+        this.messages.push(data);
+      });
+      
     },
-    async sendMessage() {
-      if (this.userName && this.newMessage) {
-       const msg = {
-          userName: this.userName,
+    sendMessage() {
+      if (this.user_name && this.newMessage) {
+        const data = {
+          user_name: this.user_name,
           text: this.newMessage,
         };
-        socket.emit("chat message", msg);
+        this.socket.emit("send_message",  data);
+        console.log("Message envoyé au serveur: ", data);
         this.newMessage = ""; // Réinitialise le champ de saisie
       } else {
         console.error("Impossible d'envoyer le message: nom d'utilisateur ou message manquant");
@@ -83,38 +87,11 @@ export default {
       // Inverse la valeur de showLoginForm pour afficher le formulaire d'inscription
       this.showLoginForm = !this.showLoginForm;
     },
-    toggleDrawer() {
-      this.isDrawerOpen = !this.isDrawerOpen;
-    }
   },
   mounted() {
     eventBus.on("login", ({userId, username}) => {
       this.handleLogin({userId, username});
     });
-    socket.emit("chat message", (msg) => {
-      console.log("Message reçu du client: ", msg);
-      this.messages.push(msg);
-    });
   }
 };
 </script>
-
-
-<style scoped>
-.logreg-form {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-}
-.chat-drawer {
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 10px;
-  margin-top: 10px;
-}
-.message {
-  margin-top: 10px;
-}
-</style>

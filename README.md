@@ -46,7 +46,7 @@ Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur 
 
 1. Démarrez le serveur backend :
     ```bash
-    node index.js
+    node server.js
     ```
 
 Le serveur démarrera sur le port 3000 par défaut.

@@ -8,7 +8,6 @@ import { db, secret } from "./config.mjs";
 import bcrypt from "bcrypt";
 import bodyParser from "body-parser";
 import session from "express-session";
-import sharedSession from "express-socket.io-session";
 import os from "os";
 
 const port = process.env.PORT || 3000;
@@ -16,8 +15,8 @@ const publicPath = path.join(path.resolve(), "public");
 const distPath = path.join(path.resolve(), "dist");
 
 const app = express();
-const server = createServer(app);
-const io = new Server(server);
+const httpServer = createServer(app);
+const io = new Server(httpServer);
 
 const sessionMiddleware = session({
     secret: secret,
@@ -44,9 +43,9 @@ function getLocalIpAddress() {
 }
 
 
-//---------------------------------------------------------//
+//
 // Routes pour l'inscription et la connexion et la déconnexion des utilisateurs
-//---------------------------------------------------------//
+//
 
 // Route pour l'inscription des utilisateurs
 app.post("/api/user/register", async (req, res) => {
@@ -72,9 +71,9 @@ app.post("/api/user/register", async (req, res) => {
 
         const [rows] = await db.query('SELECT id FROM utilisateurs WHERE username = ?', [username]);
         if (rows.length > 0) {
-            const userId = rows[0].id; // Assigne l'ID à l'utilisateur
-            console.log('Utilisateur inscrit avec l\'ID : ' + userId);
-            res.status(201).json({ message: 'Inscription réussie', userId });
+            const user_id = rows[0].id; // Assigne l'ID à l'utilisateur
+            console.log('Utilisateur inscrit avec l\'ID : ' + user_id);
+            res.status(201).json({ message: 'Inscription réussie', user_id });
         } else {
             res.status(500).json({ message: 'Erreur lors de la récupération de l\'ID de l\'utilisateur' });
         }
@@ -102,25 +101,37 @@ app.post("/api/user/login", async (req, res) => {
             console.log('Mot de passe incorrect pour l\'utilisateur :' + user.id);
             return res.json({ success: false, message: 'Mot de passe incorrect' });
         }
-        req.session.userId = user.id;
-        req.session.userName = user.name
+        
         console.log('Connexion réussie pour l\'utilisateur :' + user.id);
+        console.log('Avec l\'ID de session : ' + req.session.id);
+        req.session.name = user.name
         res.json({ success: true, message: 'Connexion réussie' });
+        
+        session.count = (session.count || 0) + 1;
+        res.status(200).end("" + session.count);
+        console.log('Nombre de connexions : ' + session.count);
+
+        io.to(session.id).emit("nb_session", session.count);
     } catch (error) {
         console.log('Erreur lors de la connexion :' + error);
         res.status(500).json({ message: 'Erreur lors de la connexion' });
     }
 });
 
+//
 // Route pour la déconnexion des utilisateurs
+//
+
 app.post("/api/user/logout", (req, res) => {
-    console.log('Requête de déconnexion de l\'utilisateur :' + req.session.userId);
-    const idLogout = req.session.userId;
+    console.log('Requête de déconnexion de l\'utilisateur :' + req.session.id);
+    const idLogout = req.session.id;
     req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({message: 'Erreur lors de la déconnexion'});
         }
+        io.in(idLogout).disconnectSockets();
         res.json({success: true, message: 'Déconnexion réussie pour l\'utilisateur :' + idLogout});
+        res.status(204).end();
         console.log('Déconnexion réussie pour l\'utilisateur :' + idLogout);
     });
 });
@@ -131,7 +142,7 @@ app.post("/api/user/logout", (req, res) => {
 
 // Route pour récupérer les informations de l'utilisateur
 app.get("/api/user/session", async (req, res) => {
-    if (req.session.userId) {
+    if (req.session.id) {
         return res.json({success: true, isLoggedIn: true});
     } else {
         res.status(401).json({success: false, isLoggedIn: false, message: 'Non autorisé'});
@@ -144,7 +155,7 @@ if (process.env.NODE_ENV === "production") {
 } else {
     app.use("/", express.static(publicPath));
     app.use("/src", assetsRouter);
-};
+}
 
 app.use(homepageRouter);
 
@@ -152,33 +163,26 @@ app.use(homepageRouter);
 // Interactions avec les salons de discussion
 //
 
-io.use(sharedSession(sessionMiddleware, {
-    autoSave: true
-}));
+io.engine.use(sessionMiddleware);
 
 io.on('connection', (socket) => {
-    if (!socket.handshake.session.userId) {
-        console.log('Connexion refusée : utilisateur non authentifié');
-        socket.disconnect();
-        return;
-    }
+    console.log('Socket connecté : ' + socket.request.session.id);
     
-    console.log('Socket connecté : ' + socket.handshake.session.userId);
-    socket.on('chat message', (msg) => {
-        console.log('Message reçu : ' + msg);
-        io.emit('chat message', msg);
+    socket.on('send_message', (data) => {
+        console.log(data.user_name + ' : ' + data.text);
+        io.emit('new_message', data);
     });
-    
+
     socket.on('disconnect', () => {
-        console.log('Socket déconnecté : ' + socket.handshake.session.userId);
+        const idDisconnect = socket.request.session.id;
+        io.in(idDisconnect).disconnectSockets();
+        console.log('Socket déconnecté');
     });
 });
-
-
-server.listen(port, '0.0.0.0', () => {
+    
+httpServer.listen(port, '0.0.0.0', () => {
     console.log(`server ouvert sur http://localhost:${port}\n`);
     console.log(`en local sur `+ getLocalIpAddress() + `:${port}`);
-
 });
 
 
