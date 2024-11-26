@@ -3,12 +3,12 @@
   "private": true,
   "version": "0.2.0",
   "type": "module",
-  "main": "server/index.js",
+  "main": "server/server.js",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "nodemon server/index.js",
+    "dev:backend": "nodemon server/server.js",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "start": "cross-env NODE_ENV=production node server/index.js",
+    "start": "cross-env NODE_ENV=production node server/server.js",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -23,7 +23,8 @@
     "socket.io": "^4.8.0",
     "socket.io-client": "^4.8.0",
     "vue": "^3.5.10",
-    "vue-router": "^4.4.5"
+    "vue-router": "^4.4.5",
+    "vue-socket.io": "^3.0.10"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.4",

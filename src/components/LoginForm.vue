@@ -31,7 +31,6 @@
 
 <script>
 import {defineComponent} from 'vue';
-import { io } from 'socket.io-client';
 import eventBus from "../eventBus.js";  
 
 export default defineComponent({
@@ -41,30 +40,9 @@ export default defineComponent({
       password: '',
       isLoggedIn: false, // État de connexion
       errorMessage: '',
-      socket: null // Instance de socket.io
     };
   },
-  mounted() {
-    this.checkSession(); // Vérifie si l'utilisateur est déjà connecté
-  },
   methods: {
-    async checkSession() {
-      try {
-        const response = await fetch(`/api/user/session`, {
-          credentials: 'include',
-        });
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP! statut: ${response.status}`);
-        }
-        const data = await response.json();
-        if (data.isLoggedIn) {
-          this.isLoggedIn = true; // État de connexion
-          this.connectSocket(); // Connecte le socket
-        }
-      } catch (error) {
-        console.log('Erreur lors de l\'initialisation de la session ou session non initialisée', error);
-      }
-    },
     async handleLogin() {
       try {
         const response = await fetch('/api/user/login', {
@@ -82,7 +60,6 @@ export default defineComponent({
 
         if (response.ok) {
           this.isLoggedIn = true; // Met à jour l'état de connexion
-          this.connectSocket(); // Connecte le socket
           eventBus.emit('login', { userId: data.userId, username: this.username }); // Émet un événement de connexion
         } else {
           this.errorMessage = data.message;
@@ -101,9 +78,6 @@ export default defineComponent({
 
         if (response.ok) {
           this.isLoggedIn = false; // Met à jour l'état de connexion
-          if (this.socket){
-            this.socket.disconnect(); // Déconnecte le socket
-          }
         } else {
           console.error('Erreur de déconnexion:', response.statusText);
         }
@@ -111,19 +85,9 @@ export default defineComponent({
         console.error('Erreur:', error);
       }
     },
-    connectSocket() {
-      this.socket = io();
-      this.socket.on('connect', () => {
-        console.log('Socket connecté au serveur, ID:', this.socket.id);
-      });
-      this.socket.on('disconnect', () => {
-        console.log('Socket déconnecté du serveur');
-      });
-    },
   },
 });
 </script>
 
 <style scoped>
-
 </style>
