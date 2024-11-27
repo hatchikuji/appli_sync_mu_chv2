@@ -19,8 +19,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
         origin: [
-            "http://localhost:3000",
-            "http://192.168.1.151:3000" // Pour se connecter avec l'adresse IP plutôt que localhost
+            "*" // Pour autoriser toutes les connexions
         ],
         methods: ["GET", "POST"]
     }
