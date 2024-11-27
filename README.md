@@ -51,7 +51,7 @@ Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur 
 
 Le serveur démarrera sur le port 3000 par défaut.
 
-Ouvrez votre navigateur et accédez à http://localhost:3000/ pour utiliser l'application.
+Ouvrez votre navigateur et accédez à http://localhost:3000/ ou bien http://[votre_ip]:3000/ pour utiliser l'application.
 
 ## Dépendances
 
@@ -68,11 +68,6 @@ Ouvrez votre navigateur et accédez à http://localhost:3000/ pour utiliser l'ap
 3. Scripts
 - Pour lancer le serveur backend : node server.mjs
 - Pour lancer le frontend : npm run serve (si vous avez configuré un script de démarrage)
-4. Gestion des erreurs et logs
-- Les événements et les erreurs sont enregistrés dans le fichier server.mjs.log. Assurez-vous de consulter ce fichier pour le débogage et la surveillance.
-
-## Contribuer
-Les contributions sont les bienvenues ! Si vous souhaitez améliorer ce projet, n'hésitez pas à ouvrir une demande de tirage.
 
 Auteurs
 - [Hatchikuji](https://github.com/hatchikuji) - Développeur principal
