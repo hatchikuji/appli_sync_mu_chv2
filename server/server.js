@@ -9,6 +9,7 @@ import bcrypt from "bcrypt";
 import bodyParser from "body-parser";
 import session from "express-session";
 import os from "os";
+import cors from "cors";
 
 const port = process.env.PORT || 3000;
 const publicPath = path.join(path.resolve(), "public");
@@ -33,6 +34,7 @@ const sessionMiddleware = session({ // Middleware pour la session
     cookie: { secure: false }
 });
 
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // Pour parser les données POST
 app.use(sessionMiddleware); // Utilisation du middleware pour la session express
@@ -189,7 +191,7 @@ io.on('connection', (socket) => {
     
 httpServer.listen(port, '0.0.0.0', () => {
     console.log(`server ouvert sur http://localhost:${port}\n`);
-    console.log(`en local sur `+ getLocalIpAddress() + `:${port}`);
+    console.log(`en local sur http://`+ getLocalIpAddress() + `:${port}`);
 });
 
 
