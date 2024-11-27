@@ -20,14 +20,14 @@ const io = new Server(httpServer, {
     cors: {
         origin: [
             "http://localhost:3000",
-            "http://192.168.1.151:3000"
+            "http://192.168.1.151:3000" // Pour se connecter avec l'adresse IP plutôt que localhost
         ],
         methods: ["GET", "POST"]
     }
 });
 
 
-const sessionMiddleware = session({
+const sessionMiddleware = session({ // Middleware pour la session
     secret: secret,
     resave: false,
     saveUninitialized: true,
@@ -35,8 +35,8 @@ const sessionMiddleware = session({
 });
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(sessionMiddleware);
+app.use(bodyParser.urlencoded({ extended: true })); // Pour parser les données POST
+app.use(sessionMiddleware); // Utilisation du middleware pour la session express
 
 // Fonction pour récupérer l'adresse IP local
 function getLocalIpAddress() {
@@ -53,7 +53,7 @@ function getLocalIpAddress() {
 
 
 //
-// Routes pour l'inscription et la connexion et la déconnexion des utilisateurs
+// Routes pour l'inscription, la connexion et la déconnexion des utilisateurs
 //
 
 // Route pour l'inscription des utilisateurs
@@ -158,7 +158,7 @@ app.get("/api/user/session", async (req, res) => {
     }
 });
 
-
+// changement de la variable d'env pour la production
 if (process.env.NODE_ENV === "production") {
     app.use("/", express.static(distPath));
 } else {
@@ -172,7 +172,7 @@ app.use(homepageRouter);
 // Interactions avec les salons de discussion
 //
 
-io.engine.use(sessionMiddleware);
+io.engine.use(sessionMiddleware); // Utilisation du middleware pour le socket
 
 io.on('connection', (socket) => {
     console.log('Socket connecté : ' + socket.request.session.id);
