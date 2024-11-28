@@ -13,7 +13,6 @@ import cors from "cors";
 
 const port = process.env.PORT || 3000;
 const publicPath = path.join(path.resolve(), "public");
-const distPath = path.join(path.resolve(), "dist");
 
 const app = express();
 const httpServer = createServer(app);
@@ -160,13 +159,8 @@ app.get("/api/user/session", async (req, res) => {
 });
 
 // changement de la variable d'env pour la production
-if (process.env.NODE_ENV === "production") {
-    app.use("/", express.static(distPath));
-} else {
-    app.use("/", express.static(publicPath));
-    app.use("/src", assetsRouter);
-}
-
+app.use("/", express.static(publicPath));
+app.use("/src", assetsRouter);
 app.use(homepageRouter);
 
 //
@@ -191,7 +185,7 @@ io.on('connection', (socket) => {
     
 httpServer.listen(port, '0.0.0.0', () => {
     console.log(`server ouvert sur http://localhost:${port}\n`);
-    console.log(`en local sur http://`+ getLocalIpAddress() + `:${port}`);
+    console.log(`en local sur http://${getLocalIpAddress()}:${port}`);
 });
 
 
