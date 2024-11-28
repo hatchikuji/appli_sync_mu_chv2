@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : mar. 26 nov. 2024 à 19:43
+-- Généré le : jeu. 28 nov. 2024 à 19:41
 -- Version du serveur : 8.2.0
 -- Version de PHP : 8.2.13
 
@@ -33,7 +33,14 @@ CREATE TABLE IF NOT EXISTS `artiste` (
   `prenom` text NOT NULL,
   `nom` text NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Déchargement des données de la table `artiste`
+--
+
+INSERT INTO `artiste` (`id`, `prenom`, `nom`) VALUES
+(1, '', 'Surf Curse');
 
 -- --------------------------------------------------------
 
@@ -46,13 +53,21 @@ CREATE TABLE IF NOT EXISTS `musique` (
   `id` int NOT NULL AUTO_INCREMENT,
   `titre` varchar(256) NOT NULL,
   `duree` int NOT NULL,
+  `chemin` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `id_artiste` int NOT NULL,
-  `note` int NOT NULL,
+  `note` decimal(10,0) NOT NULL,
   `album` varchar(256) NOT NULL,
   `nb_ecoute` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id_artiste` (`id_artiste`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Déchargement des données de la table `musique`
+--
+
+INSERT INTO `musique` (`id`, `titre`, `duree`, `chemin`, `id_artiste`, `note`, `album`, `nb_ecoute`) VALUES
+(2, 'Freaks', 147, '', 1, 4, '', 0);
 
 -- --------------------------------------------------------
 
@@ -70,8 +85,27 @@ CREATE TABLE IF NOT EXISTS `playlist` (
   `note` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id_utilisateur` (`id_utilisateur`),
-  KEY `id_artiste` (`id_artiste`,`id_musique`)
+  KEY `id_artiste` (`id_artiste`,`id_musique`),
+  KEY `id_musique` (`id_musique`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Doublure de structure pour la vue `recherche_globale`
+-- (Voir ci-dessous la vue réelle)
+--
+DROP VIEW IF EXISTS `recherche_globale`;
+CREATE TABLE IF NOT EXISTS `recherche_globale` (
+`id_musique` int
+,`titre_musique` varchar(256)
+,`album` varchar(256)
+,`prenom_artiste` text
+,`nom_artiste` text
+,`duree` int
+,`note_musique` decimal(10,0)
+,`nb_ecoute` int
+);
 
 -- --------------------------------------------------------
 
@@ -89,25 +123,33 @@ CREATE TABLE IF NOT EXISTS `utilisateurs` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
---
--- Déchargement des données de la table `utilisateurs`
---
+-- --------------------------------------------------------
 
-INSERT INTO `utilisateurs` (`id`, `email`, `username`, `password`, `nb_playlist`) VALUES
-(11, 'swannbrillant@gmail.com', 'swann', '$2b$10$LIsdYs/DBjJz3Cmwo4efA.BXGGn7/9uyAREzq6D/pi1DX2.dC1MHC', 0),
-(12, 'swann.brillant@stjosup.com', 'mùachin', '$2b$10$5T0Q01OTxU3CE6R.9BUYZuBuV/dn9TkCLxC3WhzJMZC4/qxTc8yNe', 0),
-(13, 'aziospazo@gmail.com', 'brillant', '$2b$10$9QULJvTYm68fcCdlxUNdnuIUepX.JFHoB0O9tQ1BvOXGR/ePcrfBK', 0),
-(14, 'test@mail.com', 'test', '$2b$10$UaO7s/bTcEiV3rj4GuU/NeJJ3K09RJdEXizUuVYDnUE8EXbwVb4Zq', 0);
+--
+-- Structure de la vue `recherche_globale`
+--
+DROP TABLE IF EXISTS `recherche_globale`;
+
+DROP VIEW IF EXISTS `recherche_globale`;
+CREATE ALGORITHM=UNDEFINED DEFINER=`pperso`@`%` SQL SECURITY DEFINER VIEW `recherche_globale`  AS SELECT `m`.`id` AS `id_musique`, `m`.`titre` AS `titre_musique`, `m`.`album` AS `album`, `a`.`prenom` AS `prenom_artiste`, `a`.`nom` AS `nom_artiste`, `m`.`duree` AS `duree`, `m`.`note` AS `note_musique`, `m`.`nb_ecoute` AS `nb_ecoute` FROM (`musique` `m` join `artiste` `a` on((`m`.`id_artiste` = `a`.`id`))) ;
 
 --
 -- Contraintes pour les tables déchargées
 --
 
 --
+-- Contraintes pour la table `musique`
+--
+ALTER TABLE `musique`
+  ADD CONSTRAINT `musique_ibfk_1` FOREIGN KEY (`id_artiste`) REFERENCES `artiste` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Contraintes pour la table `playlist`
 --
 ALTER TABLE `playlist`
-  ADD CONSTRAINT `playlist_ibfk_1` FOREIGN KEY (`id_utilisateur`) REFERENCES `utilisateurs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `playlist_ibfk_1` FOREIGN KEY (`id_utilisateur`) REFERENCES `utilisateurs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `playlist_ibfk_2` FOREIGN KEY (`id_artiste`) REFERENCES `artiste` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `playlist_ibfk_3` FOREIGN KEY (`id_musique`) REFERENCES `musique` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

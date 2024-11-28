@@ -69,22 +69,6 @@ export default defineComponent({
         console.log('Erreur:', error);
       }
     },
-    async handleLogout() {
-      try {
-        const response = await fetch('/api/logout', {
-          method: 'POST',
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          this.isLoggedIn = false; // Met à jour l'état de connexion
-        } else {
-          console.error('Erreur de déconnexion:', response.statusText);
-        }
-      } catch (error) {
-        console.error('Erreur:', error);
-      }
-    },
   },
 });
 </script>

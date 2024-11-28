@@ -9,23 +9,23 @@ import bcrypt from "bcrypt";
 import bodyParser from "body-parser";
 import session from "express-session";
 import os from "os";
-import cors from "cors";
 
 const port = process.env.PORT || 3000;
 const publicPath = path.join(path.resolve(), "public");
-
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
         origin: [
-            "*" // Pour autoriser toutes les connexions
+            "http://localhost:3000",
+            `http://${getLocalIpAddress()}:3000`,
+            "*"// Pour autoriser toutes les connexions
         ],
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["login-message-header",""],
     }
 });
-
-
 const sessionMiddleware = session({ // Middleware pour la session
     secret: secret,
     resave: false,
@@ -33,7 +33,6 @@ const sessionMiddleware = session({ // Middleware pour la session
     cookie: { secure: false }
 });
 
-app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // Pour parser les données POST
 app.use(sessionMiddleware); // Utilisation du middleware pour la session express
@@ -74,7 +73,7 @@ app.post("/api/user/register", async (req, res) => {
     try {
         // Hachage du mot de passe
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = 'INSERT INTO utilisateurs (email, username, password) VALUES (?, ?, ?)';
+        const query = 'INSERT INTO utilisateurs (email, username, password, nb_playlist) VALUES (?, ?, ?, 0)';
         // Création de l'utilisateur et insertion dans la base de données
         await db.query(query, [email, username, hashedPassword]);
 
@@ -127,10 +126,7 @@ app.post("/api/user/login", async (req, res) => {
     }
 });
 
-//
 // Route pour la déconnexion des utilisateurs
-//
-
 app.post("/api/user/logout", (req, res) => {
     console.log('Requête de déconnexion de l\'utilisateur :' + req.session.id);
     const idLogout = req.session.id;
@@ -155,6 +151,30 @@ app.get("/api/user/session", async (req, res) => {
         return res.json({success: true, isLoggedIn: true});
     } else {
         res.status(401).json({success: false, isLoggedIn: false, message: 'Non autorisé'});
+    }
+});
+
+// Route pour la recherche des utilisateurs
+app.get("/api/search", async (req, res) => {
+    const search_query = req.query.query;
+    if (!search_query) {
+        return res.status(400).json({message: 'Requête de recherche vide'});
+    }
+    try {
+        const query = `SELECT *
+                       FROM recherche_globale
+                       WHERE titre_musique LIKE ?
+                          OR album LIKE ?
+                          OR prenom_artiste LIKE ?
+                          OR nom_artiste LIKE ?`;
+        const likeQuery = `%${search_query}%`;
+        const results = await db.query(query, [likeQuery, likeQuery, likeQuery, likeQuery]);
+        
+        res.json({success: true, results});
+        
+    } catch (error) {
+        console.error('Erreur lors de la recherche :' + error);
+        res.status(500).json({success: false, message: 'Erreur interne au serveur'});
     }
 });
 
