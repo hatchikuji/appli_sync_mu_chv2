@@ -134,7 +134,11 @@ app.post("/api/user/logout", (req, res) => {
         if (err) {
             return res.status(500).json({message: 'Erreur lors de la déconnexion'});
         }
-        io.in(idLogout).disconnectSockets();
+        io.disconnectSockets();
+        session.count = (session.count || 0) - 1;
+        console.log('Nombre de connexions : ' + session.count);
+        
+        
         res.json({success: true, message: 'Déconnexion réussie pour l\'utilisateur :' + idLogout});
         res.status(204).end();
         console.log('Déconnexion réussie pour l\'utilisateur :' + idLogout);
@@ -198,8 +202,9 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const idDisconnect = socket.request.session.id;
+        socket.disconnect();
         io.in(idDisconnect).disconnectSockets();
-        console.log('Socket déconnecté');
+        console.log('Socket déconnecté', idDisconnect);
     });
 });
     

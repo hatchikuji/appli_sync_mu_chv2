@@ -19,7 +19,7 @@
             </li>
             <li class="navli">
               <div class="searchbox">
-                <input type="text" v-model="searchQuery" @input="handleSearch"
+                <input type="text" v-model="searchQuery" @input="optimizedHandleSearch"
                        placeholder="Titre, Album, Nom d'artiste...">
               </div>
             </li>
@@ -44,12 +44,17 @@
           <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Entrez votre message..."/>
           <button @click="sendMessage">Envoyer</button>
         </div>
-        <div v-for="item in results" :key="item.id_musique">
-          <p><strong>{{ item.titre_musique }}</strong> - {{ item.prenom_artiste }} {{ item.nom_artiste }}</p>
-          <p>Album : {{ item.album }}</p>
-          <p>Durée : {{ item.duree }} secondes</p>
-          <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <div v-if="results">
+          <p><strong>{{ results.titre_musique }}</strong> - {{ results.prenom_artiste || "" }} {{ results.nom_artiste }}</p>
+          <p>Album : {{ results.album || "Non spécifié" }}</p>
+          <p>Durée : {{ results.duree }} secondes</p>
+          <p>Note : {{ results.note_musique }}</p>
+          <p>Nombre d'écoutes : {{ results.nb_ecoute }}</p>
         </div>
+        <div v-else-if="searchQuery && !errorMessage">
+          <p>Aucun résultat trouvé pour "{{ searchQuery }}"</p>
+        </div>
+        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
       </div>
       <!-- Formulaire de connexion/inscription -->
       <div class="logreg-form">
@@ -67,7 +72,6 @@ import LoginForm from "./components/LoginForm.vue";
 import RegisterForm from "./components/RegisterForm.vue";
 import eventBus from "./eventBus.js";
 import {io} from "socket.io-client";
-
 
 export default {
   name: "App",
@@ -96,6 +100,7 @@ export default {
           method: "GET",
           credentials: "include"
         });
+        this.errorMessage = ""; // Réinitialise le message d'erreur
         if (!response.ok) {
           throw new Error("Erreur lors de la recherche");
         }
@@ -104,17 +109,29 @@ export default {
           this.results = []; // Réinitialise les résultats
           return;
         }
-
+        
         const data = await response.json();
         if (data.success) {
-          this.results = data.results; // Mets à jour les résultats de la recherche
+          this.results = data.results[0][0]; // Mets à jour les résultats de la recherche
+          console.log("Résultats de la recherche:", this.results);
         } else {
           console.error("Erreur:", data.message);
+          this.results = null;
         }
       } catch (error) {
         this.errorMessage = "Une erreur est survenue lors de la recherche.";
         console.error("Erreur lors de la recherche:", error);
+        this.results = null;
       }
+    },
+    debounce(callback, delay) {
+      let timer;
+      return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          callback.apply(this, args);
+        }, delay);
+      };
     },
     toggleForm() {
       // Inverse la valeur de showLoginForm pour afficher le formulaire d'inscription
@@ -142,7 +159,7 @@ export default {
               method: "POST",
               credentials: "include"
             },
-            this.socket.disconnect()); // Déconnecte le socket
+        ); // Déconnecte le socket
         this.isLoggedIn = false; // Déconnecte l'utilisateur
       } catch (error) {
         console.error("Erreur lors de la déconnexion:", error);
@@ -166,6 +183,7 @@ export default {
     eventBus.on("login", ({userId, username}) => {
       this.handleLogin({userId, username});
     });
+    this.optimizedHandleSearch = this.debounce(this.handleSearch, 300);
   },
 };
 </script>
