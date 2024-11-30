@@ -12,13 +12,21 @@ import os from "os";
 
 const port = process.env.PORT || 3000;
 const publicPath = path.join(path.resolve(), "public");
-const distPath = path.join(path.resolve(), "dist");
-
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer);
-
-const sessionMiddleware = session({
+const io = new Server(httpServer, {
+    cors: {
+        origin: [
+            "http://localhost:3000",
+            `http://${getLocalIpAddress()}:3000`,
+            "*"// Pour autoriser toutes les connexions
+        ],
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["login-message-header",""],
+    }
+});
+const sessionMiddleware = session({ // Middleware pour la session
     secret: secret,
     resave: false,
     saveUninitialized: true,
@@ -26,8 +34,8 @@ const sessionMiddleware = session({
 });
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(sessionMiddleware);
+app.use(bodyParser.urlencoded({ extended: true })); // Pour parser les données POST
+app.use(sessionMiddleware); // Utilisation du middleware pour la session express
 
 // Fonction pour récupérer l'adresse IP local
 function getLocalIpAddress() {
@@ -44,7 +52,7 @@ function getLocalIpAddress() {
 
 
 //
-// Routes pour l'inscription et la connexion et la déconnexion des utilisateurs
+// Routes pour l'inscription, la connexion et la déconnexion des utilisateurs
 //
 
 // Route pour l'inscription des utilisateurs
@@ -65,7 +73,7 @@ app.post("/api/user/register", async (req, res) => {
     try {
         // Hachage du mot de passe
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = 'INSERT INTO utilisateurs (email, username, password) VALUES (?, ?, ?)';
+        const query = 'INSERT INTO utilisateurs (email, username, password, nb_playlist) VALUES (?, ?, ?, 0)';
         // Création de l'utilisateur et insertion dans la base de données
         await db.query(query, [email, username, hashedPassword]);
 
@@ -118,10 +126,7 @@ app.post("/api/user/login", async (req, res) => {
     }
 });
 
-//
 // Route pour la déconnexion des utilisateurs
-//
-
 app.post("/api/user/logout", (req, res) => {
     console.log('Requête de déconnexion de l\'utilisateur :' + req.session.id);
     const idLogout = req.session.id;
@@ -129,7 +134,11 @@ app.post("/api/user/logout", (req, res) => {
         if (err) {
             return res.status(500).json({message: 'Erreur lors de la déconnexion'});
         }
-        io.in(idLogout).disconnectSockets();
+        io.disconnectSockets();
+        session.count = (session.count || 0) - 1;
+        console.log('Nombre de connexions : ' + session.count);
+        
+        
         res.json({success: true, message: 'Déconnexion réussie pour l\'utilisateur :' + idLogout});
         res.status(204).end();
         console.log('Déconnexion réussie pour l\'utilisateur :' + idLogout);
@@ -149,40 +158,58 @@ app.get("/api/user/session", async (req, res) => {
     }
 });
 
+// Route pour la recherche des utilisateurs
+app.get("/api/search", async (req, res) => {
+    const search_query = req.query.query;
+    if (!search_query) {
+        return res.status(400).json({message: 'Requête de recherche vide'});
+    }
+    try {
+        const query = `SELECT *
+                       FROM recherche_globale
+                       WHERE titre LIKE ?
+                          OR album LIKE ?
+                          OR nom_artiste LIKE ?`;
+        const likeQuery = `%${search_query}%`;
+        const results = await db.query(query, [likeQuery, likeQuery, likeQuery, likeQuery]);
+        
+        res.json({success: true, results});
+        
+    } catch (error) {
+        console.error('Erreur lors de la recherche :' + error);
+        res.status(500).json({success: false, message: 'Erreur interne au serveur'});
+    }
+});
 
-if (process.env.NODE_ENV === "production") {
-    app.use("/", express.static(distPath));
-} else {
-    app.use("/", express.static(publicPath));
-    app.use("/src", assetsRouter);
-}
-
+// changement de la variable d'env pour la production
+app.use("/", express.static(publicPath));
+app.use("/src", assetsRouter);
 app.use(homepageRouter);
 
 //
 // Interactions avec les salons de discussion
 //
 
-io.engine.use(sessionMiddleware);
+io.engine.use(sessionMiddleware); // Utilisation du middleware pour le socket
 
 io.on('connection', (socket) => {
     console.log('Socket connecté : ' + socket.request.session.id);
     
     socket.on('send_message', (data) => {
-        console.log(data.user_name + ' : ' + data.text);
         io.emit('new_message', data);
     });
 
     socket.on('disconnect', () => {
         const idDisconnect = socket.request.session.id;
+        socket.disconnect();
         io.in(idDisconnect).disconnectSockets();
-        console.log('Socket déconnecté');
+        console.log('Socket déconnecté', idDisconnect);
     });
 });
     
 httpServer.listen(port, '0.0.0.0', () => {
     console.log(`server ouvert sur http://localhost:${port}\n`);
-    console.log(`en local sur `+ getLocalIpAddress() + `:${port}`);
+    console.log(`en local sur http://${getLocalIpAddress()}:${port}`);
 });
 
 
