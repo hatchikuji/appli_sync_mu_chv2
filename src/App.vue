@@ -44,16 +44,24 @@
           <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Entrez votre message..."/>
           <button @click="sendMessage">Envoyer</button>
         </div>
-        <div v-if="results">
-          <p><strong>{{ results.titre_musique }}</strong> - {{ results.prenom_artiste || "" }} {{ results.nom_artiste }}</p>
-          <p>Album : {{ results.album || "Non spécifié" }}</p>
-          <p>Durée : {{ results.duree }} secondes</p>
-          <p>Note : {{ results.note_musique }}</p>
-          <p>Nombre d'écoutes : {{ results.nb_ecoute }}</p>
-        </div>
+        <ul v-if="results && results.length" class="resultgrid">
+          <li v-for="(result, index) in results" :key="index" class="resultlist">
+            <div class="titre_artiste">
+              <p><strong>{{ result.titre }}</strong></p>
+              <p>{{ result.nom_artiste }}</p>
+            </div>
+            <div class="album">
+              {{ result.album || "Non spécifié" }}
+            </div>
+            <div class="duree">
+              {{ formatDuration(result.duree) }}
+            </div>
+          </li>
+        </ul>
         <div v-else-if="searchQuery && !errorMessage">
           <p>Aucun résultat trouvé pour "{{ searchQuery }}"</p>
         </div>
+
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
       </div>
       <!-- Formulaire de connexion/inscription -->
@@ -102,6 +110,7 @@ export default {
         });
         this.errorMessage = ""; // Réinitialise le message d'erreur
         if (!response.ok) {
+          // noinspection ExceptionCaughtLocallyJS
           throw new Error("Erreur lors de la recherche");
         }
 
@@ -109,10 +118,10 @@ export default {
           this.results = []; // Réinitialise les résultats
           return;
         }
-        
+
         const data = await response.json();
         if (data.success) {
-          this.results = data.results[0][0]; // Mets à jour les résultats de la recherche
+          this.results = data.results[0] // Mets à jour les résultats de la recherche
           console.log("Résultats de la recherche:", this.results);
         } else {
           console.error("Erreur:", data.message);
@@ -123,6 +132,13 @@ export default {
         console.error("Erreur lors de la recherche:", error);
         this.results = null;
       }
+    },
+    formatDuration(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
+      return `${minutes}:${formattedSeconds}`;
     },
     debounce(callback, delay) {
       let timer;
@@ -261,7 +277,7 @@ button {
   z-index: 1000;
   position: sticky;
   top: 0;
-  width: 100vw;
+  width: auto;
 }
 
 .navbar .navlist {
@@ -289,7 +305,7 @@ button {
   text-decoration: underline;
 }
 
-/* Styles pour l'affichage de recherche de musique */
+/* Styles pour l'affichage de la bare de recherche de musique */
 
 .searchbox {
   display: flex;
@@ -299,10 +315,39 @@ button {
   margin: 0;
 }
 
+/* Styles pour les résultats de la recherche */
+
 .error-message {
   color: red;
   margin: 10px 0;
 }
 
+.resultgrid {
+  display: grid;
+  gap: 10px;
 
+}
+
+.resultlist {
+  list-style: none;
+  border: solid #ffffff;
+  width: 70vw;
+  display: flex;
+  align-items: center;
+}
+
+.titre_artiste {
+  flex: 1;
+  margin-left: 2%;
+}
+
+.album {
+  flex: 1;
+  text-align: left;
+}
+
+.duree {
+  flex: 1;
+  text-align: left;
+}
 </style>

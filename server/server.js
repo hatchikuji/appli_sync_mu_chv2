@@ -167,9 +167,8 @@ app.get("/api/search", async (req, res) => {
     try {
         const query = `SELECT *
                        FROM recherche_globale
-                       WHERE titre_musique LIKE ?
+                       WHERE titre LIKE ?
                           OR album LIKE ?
-                          OR prenom_artiste LIKE ?
                           OR nom_artiste LIKE ?`;
         const likeQuery = `%${search_query}%`;
         const results = await db.query(query, [likeQuery, likeQuery, likeQuery, likeQuery]);
