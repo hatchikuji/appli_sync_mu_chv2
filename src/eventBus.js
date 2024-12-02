@@ -12,10 +12,5 @@ const eventBus = reactive({
         }
         this.events[event].push(callback);
     },
-    off(event, callback){
-        if(this.events[event]){
-            this.events[event] = this.events[event].filter(cb => cb !== callback);
-        }
-    }
 })
 export default eventBus;
