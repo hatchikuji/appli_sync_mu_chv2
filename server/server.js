@@ -199,7 +199,7 @@ io.on('connection', (socket) => {
         io.emit('new_message', data);
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (socket) => {
         const idDisconnect = socket.request.session.id;
         socket.disconnect();
         io.in(idDisconnect).disconnectSockets();
