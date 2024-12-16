@@ -1,37 +1,38 @@
 <template>
-  <div v-if="!isLoggedIn">
-    <div class="login-form">
-      <h2>Connexion</h2>
-      <form @submit.prevent="handleLogin">
-        <div class="form-group">
-          <label for="username">Nom d'utilisateur</label>
-          <input
-              type="text"
-              v-model="username"
-              id="username"
-              class="form-control"
-              required/>
-        </div>
-        <div class="form-group">
-          <label for="password">Mot de passe</label>
-          <input
-              type="password"
-              v-model="password"
-              id="password"
-              class="form-control"
-              required
-          />
-        </div>
-        <button type="submit" class="btn btn-primary">Se connecter</button>
-      </form>
-      <p v-if="errorMessage" class="text-danger">{{ errorMessage }}</p>
-    </div>
+  <div v-if="!isLoggedIn" class="logreg-form">
+    <form @submit.prevent="handleLogin" class="form-txt">
+      <div class="form__group field">
+        <input
+            type="text"
+            v-model="username"
+            id="username"
+            class="input__field"
+            autocomplete="username"
+            placeholder="Nom d'utilisateur"
+            required/>
+        <label class="input__label" for="username">Nom d'utilisateur</label>
+      </div>
+      <div class="form__group field">
+        <input
+            type="password"
+            v-model="password"
+            id="password"
+            class="input__field"
+            autocomplete="current-password"
+            placeholder="Mot de passe"
+            required
+        />
+        <label class="input__label" for="password">Mot de passe</label>
+      </div>
+      <button type="submit" class="button__primary">Se connecter</button>
+    </form>
+    <p v-if="errorMessage" class="text-danger">{{ errorMessage }}</p>
   </div>
 </template>
 
 <script>
 import {defineComponent} from 'vue';
-import eventBus from "../eventBus.js";  
+import eventBus from "../eventBus.js";
 
 export default defineComponent({
   data() {
@@ -60,7 +61,7 @@ export default defineComponent({
 
         if (response.ok) {
           this.isLoggedIn = true; // Met à jour l'état de connexion
-          eventBus.emit('login', { userId: data.userId, username: this.username }); // Émet un événement de connexion
+          eventBus.emit('login', {userId: data.userId, username: this.username}); // Émet un événement de connexion
         } else {
           this.errorMessage = data.message;
         }
@@ -73,5 +74,4 @@ export default defineComponent({
 });
 </script>
 <style scoped>
-
 </style>

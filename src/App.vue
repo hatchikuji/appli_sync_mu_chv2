@@ -1,10 +1,15 @@
 <template>
-  <div id="app">
+  <div id="app" class="container">
     <header>
       <!-- Affiche la navbar, le nom d'utilisateur et les différentes options s'il est connecté -->
       <div v-if="isLoggedIn">
         <nav class="navbar">
           <ul class="navlist">
+            <li>
+              <div class="searchbox">
+                <button @click="handleLogout">Déconnexion</button>
+              </div>
+            </li>
             <li class="navli">
               <router-link to="/">Accueil</router-link>
             </li>
@@ -25,10 +30,6 @@
             </li>
           </ul>
         </nav>
-        <!-- Boutton pour ouvrir le chat -->
-        <button @click="toggleDrawer" class="drawer-toggle">
-          {{ isDrawerOpen ? "Fermer le chat" : "Ouvrir le chat" }}
-        </button>
       </div>
     </header>
     <main>
@@ -44,6 +45,7 @@
           <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Entrez votre message..."/>
           <button @click="sendMessage">Envoyer</button>
         </div>
+        <!-- Affiche les résultats de la recherche -->
         <ul v-if="results && results.length" class="resultgrid">
           <li v-for="(result, index) in results" :key="index" class="resultlist">
             <div class="titre_artiste">
@@ -56,6 +58,14 @@
             <div class="duree">
               {{ formatDuration(result.duree) }}
             </div>
+            <div>
+              <div v-if="!currentSong">
+                <button @click="playsound(result.chemin)">Jouer</button>
+              </div>
+              <div v-else>
+                <button @click="playsound(result.chemin)">Pause</button>
+              </div>
+            </div>
           </li>
         </ul>
         <div v-else-if="searchQuery && !errorMessage">
@@ -65,13 +75,19 @@
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
       </div>
       <!-- Formulaire de connexion/inscription -->
-      <div class="logreg-form">
+      <div class="form-group">
+        <h2 v-if="!isLoggedIn">Connexion</h2>
         <LoginForm v-if="!isLoggedIn && showLoginForm" @login="handleLogin"/>
         <RegisterForm v-if="!isLoggedIn && !showLoginForm"/>
-        <button v-if="!isLoggedIn" @click="toggleForm">{{ showLoginForm ? "S'inscrire" : "Se connecter" }}</button>
-        <button v-if="isLoggedIn" @click="handleLogout">Déconnexion</button>
+        <button class="btn-primary" v-if="!isLoggedIn" @click="toggleForm">{{ showLoginForm ? "S'inscrire" : "Se connecter" }}</button>
       </div>
     </main>
+    <footer v-if="isLoggedIn">
+      <!-- Boutton pour ouvrir le chat -->
+      <button @click="toggleDrawer" class="drawer-toggle">
+        {{ isDrawerOpen ? "Fermer le chat" : "Ouvrir le chat" }}
+      </button>
+    </footer>
   </div>
 </template>
 
@@ -97,12 +113,26 @@ export default {
       socket: null, // Instance de socket.io
       isDrawerOpen: false, // État du chat
       searchQuery: "", // Recherche de titre, album ou artiste
-      errorMessage: "",
+      errorMessage: "", // Message d'erreur
       results: [], // Résultats de la recherche
+      currentSong: null, // Chanson en cours de lecture
+      search:  false // Recherche par défaut
     };
   },
   methods: {
+    playsound(path) {
+      if (path && !this.currentSong) {
+        this.currentSong = new Audio(path);
+        return this.currentSong.play();
+        } else if (this.currentSong) {
+          this.currentSong.pause()
+          return this.currentSong = null;
+      } else {
+        console.error("Impossible de lire le fichier audio: chemin manquant");
+      }
+    },
     async handleSearch() { // Redirige l'utilisateur vers la page de recherche avec la requête de recherche
+      this.search = true;
       try {
         const response = await fetch(`/api/search?query=${this.searchQuery}`, {
           method: "GET",
@@ -204,150 +234,5 @@ export default {
 };
 </script>
 <style scoped>
-/* Styles pour le bouton du tiroir */
-.drawer-toggle {
-  position: absolute;
-  right: 2%;
-  bottom: 2%;
-  cursor: pointer;
-  z-index: 1001;
-}
 
-/* Styles pour le tiroir */
-.drawer {
-  position: fixed;
-  top: 0;
-  right: -300px;
-  width: 300px;
-  height: 100%;
-  background-color: #000000;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
-  transition: right 0.3s ease-in-out;
-  overflow: hidden;
-  z-index: 1000;
-}
-
-.drawer.open {
-  right: 0;
-}
-
-.chat-title {
-  text-align: left;
-  padding-left: 10%;
-}
-
-.messages {
-  flex-grow: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  margin-bottom: 10px;
-  max-height: 70vh;
-  padding: 5px;
-  text-align: left;
-  background-color: #000000;
-  word-wrap: break-word;
-}
-
-input {
-  padding: 5px;
-  border: 1px solid #ffffff;
-  border-radius: 4px;
-}
-
-button {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: #6200ea;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* Navbar style */
-.navli {
-  list-style: none;
-  height: 100%;
-  align-content: center;
-}
-
-.navbar {
-  background-color: #000000;
-  display: flex;
-  z-index: 1000;
-  position: sticky;
-  top: 0;
-  width: auto;
-}
-
-.navbar .navlist {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.navbar .navlist li {
-  float: left;
-}
-
-.navbar .navlist li a {
-  display: block;
-  color: #ffffff;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
-  transition: background-color 0.3s ease-in, color 0.3s ease-in;
-}
-
-.navbar .navlist li a:hover {
-  background-color: #8243AE;
-  color: #000000;
-  text-decoration: underline;
-}
-
-/* Styles pour l'affichage de la bare de recherche de musique */
-
-.searchbox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  margin: 0;
-}
-
-/* Styles pour les résultats de la recherche */
-
-.error-message {
-  color: red;
-  margin: 10px 0;
-}
-
-.resultgrid {
-  display: grid;
-  gap: 10px;
-
-}
-
-.resultlist {
-  list-style: none;
-  border: solid #ffffff;
-  width: 70vw;
-  display: flex;
-  align-items: center;
-}
-
-.titre_artiste {
-  flex: 1;
-  margin-left: 2%;
-}
-
-.album {
-  flex: 1;
-  text-align: left;
-}
-
-.duree {
-  flex: 1;
-  text-align: left;
-}
 </style>

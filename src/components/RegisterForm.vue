@@ -2,7 +2,7 @@
   <div class="register-form">
     <h2>Inscription</h2>
     <form @submit.prevent="handleRegister">
-      <div class="form-group">
+      <div class="form-champ">
         <label for="email">Adresse email</label>
         <input
             type="email"
@@ -12,7 +12,7 @@
             required
         />
       </div>
-      <div class="form-group">
+      <div class="form-champ">
         <label for="username">Nom d'utilisateur</label>
         <input
             type="text"
@@ -22,7 +22,7 @@
             required
         />
       </div>
-      <div class="form-group">
+      <div class="form-champ">
         <label for="password">Mot de passe</label>
         <input
             type="password"
@@ -32,7 +32,7 @@
             required
         />
       </div>
-      <div class="form-group">
+      <div class="form-champ">
         <label for="cpassword">Confirmer le mot de passe</label>
         <input
             type="password"
@@ -105,5 +105,4 @@ export default {
 </script>
 
 <style scoped>
-
 </style>

@@ -4,7 +4,7 @@ import homepageRouter from "./homepageRouter.js";
 import assetsRouter from "./assetsRouter.js";
 import {createServer} from "http";
 import {Server} from "socket.io";
-import { db, secret } from "./config.mjs";
+import {db, secret} from "./config.mjs";
 import bcrypt from "bcrypt";
 import bodyParser from "body-parser";
 import session from "express-session";
@@ -23,18 +23,23 @@ const io = new Server(httpServer, {
         ],
         methods: ["GET", "POST"],
         credentials: true,
-        allowedHeaders: ["login-message-header",""],
+    },
+    connectionStateRecovery: {
+        // the backup duration of the sessions and the packets
+        maxDisconnectionDuration: 2 * 60 * 1000,
+        // whether to skip middlewares upon successful recovery
+        skipMiddlewares: true,
     }
 });
 const sessionMiddleware = session({ // Middleware pour la session
     secret: secret,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }
+    cookie: {secure: false}
 });
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true })); // Pour parser les données POST
+app.use(bodyParser.urlencoded({extended: true})); // Pour parser les données POST
 app.use(sessionMiddleware); // Utilisation du middleware pour la session express
 
 // Fonction pour récupérer l'adresse IP local
@@ -57,18 +62,18 @@ function getLocalIpAddress() {
 
 // Route pour l'inscription des utilisateurs
 app.post("/api/user/register", async (req, res) => {
-    const { email, username, password } = req.body;
+    const {email, username, password} = req.body;
     if (!email || !username || !password) {
-        return res.status(400).json({ message: "Tous les champs sont requis" });
+        return res.status(400).json({message: "Tous les champs sont requis"});
     }
     // Test de l'unicité de l'email et du nom d'utilisateur
     const [email_rows] = await db.query("SELECT id FROM utilisateurs WHERE email = ?", [email]);
     const [username_rows] = await db.query("SELECT id FROM utilisateurs WHERE username = ?", [username]);
     if (email_rows.length > 0) {
-        return res.status(400).json({ message: "Email déjà utilisé" });
+        return res.status(400).json({message: "Email déjà utilisé"});
     }
     if (username_rows.length > 0) {
-        return res.status(400).json({ message: "Nom d'utilisateur déjà utilisé" });
+        return res.status(400).json({message: "Nom d'utilisateur déjà utilisé"});
     }
     try {
         // Hachage du mot de passe
@@ -81,25 +86,25 @@ app.post("/api/user/register", async (req, res) => {
         if (rows.length > 0) {
             const user_id = rows[0].id; // Assigne l'ID à l'utilisateur
             console.log('Utilisateur inscrit avec l\'ID : ' + user_id);
-            res.status(201).json({ message: 'Inscription réussie', user_id });
+            res.status(201).json({message: 'Inscription réussie', user_id});
         } else {
-            res.status(500).json({ message: 'Erreur lors de la récupération de l\'ID de l\'utilisateur' });
+            res.status(500).json({message: 'Erreur lors de la récupération de l\'ID de l\'utilisateur'});
         }
     } catch (error) {
-         console.log('Erreur lors de l\'inscription :' + error);
-        res.status(500).json({ message: 'Erreur lors de l\'inscription' });
+        console.log('Erreur lors de l\'inscription :' + error);
+        res.status(500).json({message: 'Erreur lors de l\'inscription'});
     }
 });
 
 // Route pour la connexion des utilisateurs
 app.post("/api/user/login", async (req, res) => {
-    const { username, password } = req.body;
+    const {username, password} = req.body;
     try {
         const query = 'SELECT * FROM utilisateurs WHERE username = ?';
         const [rows] = await db.query(query, [username]);
         // Vérification de l'existence de l'utilisateur
         if (rows.length === 0) {
-            return res.json({ success: false, message: 'Nom d\'utilisateur non trouvé' });
+            return res.json({success: false, message: 'Nom d\'utilisateur non trouvé'});
         }
 
         const user = rows[0];
@@ -107,14 +112,14 @@ app.post("/api/user/login", async (req, res) => {
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
             console.log('Mot de passe incorrect pour l\'utilisateur :' + user.id);
-            return res.json({ success: false, message: 'Mot de passe incorrect' });
+            return res.json({success: false, message: 'Mot de passe incorrect'});
         }
-        
+
         console.log('Connexion réussie pour l\'utilisateur :' + user.id);
         console.log('Avec l\'ID de session : ' + req.session.id);
         req.session.name = user.name
-        res.json({ success: true, message: 'Connexion réussie' });
-        
+        res.json({success: true, message: 'Connexion réussie'});
+
         session.count = (session.count || 0) + 1;
         res.status(200).end("" + session.count);
         console.log('Nombre de connexions : ' + session.count);
@@ -122,7 +127,7 @@ app.post("/api/user/login", async (req, res) => {
         io.to(session.id).emit("nb_session", session.count);
     } catch (error) {
         console.log('Erreur lors de la connexion :' + error);
-        res.status(500).json({ message: 'Erreur lors de la connexion' });
+        res.status(500).json({message: 'Erreur lors de la connexion'});
     }
 });
 
@@ -137,8 +142,8 @@ app.post("/api/user/logout", (req, res) => {
         io.disconnectSockets();
         session.count = (session.count || 0) - 1;
         console.log('Nombre de connexions : ' + session.count);
-        
-        
+
+
         res.json({success: true, message: 'Déconnexion réussie pour l\'utilisateur :' + idLogout});
         res.status(204).end();
         console.log('Déconnexion réussie pour l\'utilisateur :' + idLogout);
@@ -158,7 +163,7 @@ app.get("/api/user/session", async (req, res) => {
     }
 });
 
-// Route pour la recherche des utilisateurs
+// Route pour la recherche des musiques par des utilisateurs
 app.get("/api/search", async (req, res) => {
     const search_query = req.query.query;
     if (!search_query) {
@@ -169,19 +174,19 @@ app.get("/api/search", async (req, res) => {
                        FROM recherche_globale
                        WHERE titre LIKE ?
                           OR album LIKE ?
-                          OR nom_artiste LIKE ?`;
+                          OR nom_artiste LIKE ?
+                       ORDER BY titre`;
         const likeQuery = `%${search_query}%`;
         const results = await db.query(query, [likeQuery, likeQuery, likeQuery, likeQuery]);
-        
+
         res.json({success: true, results});
-        
+
     } catch (error) {
         console.error('Erreur lors de la recherche :' + error);
         res.status(500).json({success: false, message: 'Erreur interne au serveur'});
     }
 });
 
-// changement de la variable d'env pour la production
 app.use("/", express.static(publicPath));
 app.use("/src", assetsRouter);
 app.use(homepageRouter);
@@ -194,19 +199,21 @@ io.engine.use(sessionMiddleware); // Utilisation du middleware pour le socket
 
 io.on('connection', (socket) => {
     console.log('Socket connecté : ' + socket.request.session.id);
-    
+
     socket.on('send_message', (data) => {
         io.emit('new_message', data);
     });
 
-    socket.on('disconnect', (socket) => {
+    socket.on('disconnect', () => {
         const idDisconnect = socket.request.session.id;
+        socket.request.session.destroy();
+        session.count = (session.count || 0) - 1;
         socket.disconnect();
         io.in(idDisconnect).disconnectSockets();
         console.log('Socket déconnecté', idDisconnect);
     });
 });
-    
+
 httpServer.listen(port, '0.0.0.0', () => {
     console.log(`server ouvert sur http://localhost:${port}\n`);
     console.log(`en local sur http://${getLocalIpAddress()}:${port}`);
